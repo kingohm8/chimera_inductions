@@ -133,7 +133,7 @@ Please follow the steps in the url in Q1.`;
     
     try {
         const webhook = await channel.createWebhook({
-            name: interaction.user.displayName || interaction.user.username,
+            name: interaction.member.nickname || interaction.user.displayName || interaction.user.username,
             avatar: interaction.user.displayAvatarURL()
         });
         
@@ -169,7 +169,7 @@ https://forms.gle/e5X1FNf2gxCrQweg7`;
     
     try {
         const webhook = await channel.createWebhook({
-            name: interaction.user.displayName || interaction.user.username,
+            name: interaction.member.nickname || interaction.user.displayName || interaction.user.username,
             avatar: interaction.user.displayAvatarURL()
         });
         
@@ -207,7 +207,7 @@ User Management Team`;
     
     try {
         const webhook = await channel.createWebhook({
-            name: interaction.user.displayName || interaction.user.username,
+            name: interaction.member.nickname || interaction.user.displayName || interaction.user.username,
             avatar: interaction.user.displayAvatarURL()
         });
         
@@ -262,7 +262,7 @@ There's a 4 week probation period and we may check-in to see how you're going. Y
         await member.roles.remove(guestRoleId);
         
         const webhook = await channel.createWebhook({
-            name: interaction.user.displayName || interaction.user.username,
+            name: interaction.member.nickname || interaction.user.displayName || interaction.user.username,
             avatar: interaction.user.displayAvatarURL()
         });
         
