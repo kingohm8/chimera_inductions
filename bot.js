@@ -9,6 +9,17 @@ const client = new Client({
     ]
 });
 
+// Role authorization configuration
+const AUTHORIZED_ROLE_IDS = [
+    '952440799570825278', // Your authorized role ID
+    // Add more role IDs here if needed
+];
+
+// Function to check if user has authorized role
+function hasAuthorizedRole(member) {
+    return member.roles.cache.some(role => AUTHORIZED_ROLE_IDS.includes(role.id));
+}
+
 // Bot ready event
 client.once('ready', () => {
     console.log(`✅ ${client.user.tag} is online and ready!`);
@@ -105,12 +116,16 @@ client.on('interactionCreate', async interaction => {
 
 // Command handlers
 async function handleSteamIdCommand(interaction) {
+    // Check if user has authorized role
+    if (!hasAuthorizedRole(interaction.member)) {
+        return interaction.reply({ 
+            content: '❌ You need the appropriate role to use this command.', 
+            ephemeral: true 
+        });
+    }
+    
     const targetUser = interaction.options.getUser('user');
     const channel = interaction.options.getChannel('channel') || interaction.channel;
-    
-    if (!interaction.member.permissions.has(PermissionsBitField.Flags.ManageMessages)) {
-        return interaction.reply({ content: '❌ You need the "Manage Messages" permission to use this command.', ephemeral: true });
-    }
     
     const message = `Hey ${targetUser}, For Q1, that is not searchable as a Steam ID.
 
@@ -133,12 +148,16 @@ Please follow the steps in the url in Q1.`;
 }
 
 async function handleAcceptedCommand(interaction) {
+    // Check if user has authorized role
+    if (!hasAuthorizedRole(interaction.member)) {
+        return interaction.reply({ 
+            content: '❌ You need the appropriate role to use this command.', 
+            ephemeral: true 
+        });
+    }
+    
     const targetUser = interaction.options.getUser('user');
     const channel = interaction.options.getChannel('channel') || interaction.channel;
-    
-    if (!interaction.member.permissions.has(PermissionsBitField.Flags.ManageMessages)) {
-        return interaction.reply({ content: '❌ You need the "Manage Messages" permission to use this command.', ephemeral: true });
-    }
     
     const message = `Hey ${targetUser},
     
@@ -165,13 +184,17 @@ https://forms.gle/e5X1FNf2gxCrQweg7`;
 }
 
 async function handleNoResponseCommand(interaction) {
+    // Check if user has authorized role
+    if (!hasAuthorizedRole(interaction.member)) {
+        return interaction.reply({ 
+            content: '❌ You need the appropriate role to use this command.', 
+            ephemeral: true 
+        });
+    }
+    
     const targetUser = interaction.options.getUser('user');
     const time = interaction.options.getString('time');
     const channel = interaction.options.getChannel('channel') || interaction.channel;
-    
-    if (!interaction.member.permissions.has(PermissionsBitField.Flags.ManageMessages)) {
-        return interaction.reply({ content: '❌ You need the "Manage Messages" permission to use this command.', ephemeral: true });
-    }
     
     const message = `Hey ${targetUser},
     
@@ -199,12 +222,16 @@ User Management Team`;
 }
 
 async function handleWelcomeCommand(interaction) {
+    // Check if user has authorized role
+    if (!hasAuthorizedRole(interaction.member)) {
+        return interaction.reply({ 
+            content: '❌ You need the appropriate role to use this command.', 
+            ephemeral: true 
+        });
+    }
+    
     const targetUser = interaction.options.getUser('user');
     const channel = interaction.options.getChannel('channel') || interaction.channel;
-    
-    if (!interaction.member.permissions.has(PermissionsBitField.Flags.ManageRoles)) {
-        return interaction.reply({ content: '❌ You need the "Manage Roles" permission to use this command.', ephemeral: true });
-    }
     
     const welcomeMessage = `Thanks ${targetUser}, 
     
