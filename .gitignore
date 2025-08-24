@@ -1,0 +1,17 @@
+# Secrets and config
+.env
+config.json
+token.txt
+
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/

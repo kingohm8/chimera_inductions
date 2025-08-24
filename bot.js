@@ -1,0 +1,265 @@
+const { Client, GatewayIntentBits, PermissionsBitField, EmbedBuilder, SlashCommandBuilder } = require('discord.js');
+require('dotenv').config();
+
+// Create a new client instance
+const client = new Client({
+    intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMessages
+    ]
+});
+
+// Bot ready event
+client.once('ready', () => {
+    console.log(`✅ ${client.user.tag} is online and ready!`);
+    client.user.setActivity('Managing Steam IDs', { type: 'WATCHING' });
+});
+
+// Slash command registration
+const commands = [
+    new SlashCommandBuilder()
+        .setName('steamid')
+        .setDescription('Send Steam ID correction message')
+        .addUserOption(option =>
+            option.setName('user')
+                .setDescription('The user who needs to correct their Steam ID')
+                .setRequired(true))
+        .addChannelOption(option =>
+            option.setName('channel')
+                .setDescription('The channel to send the message to (optional)')
+                .setRequired(false)),
+    
+    new SlashCommandBuilder()
+        .setName('accepted')
+        .setDescription('Send application acceptance message')
+        .addUserOption(option =>
+            option.setName('user')
+                .setDescription('The user whose application was accepted')
+                .setRequired(true))
+        .addChannelOption(option =>
+            option.setName('channel')
+                .setDescription('The channel to send the message to (optional)')
+                .setRequired(false)),
+    
+    new SlashCommandBuilder()
+        .setName('noresponse')
+        .setDescription('Send no response warning message')
+        .addUserOption(option =>
+            option.setName('user')
+                .setDescription('The user who needs to respond')
+                .setRequired(true))
+        .addStringOption(option =>
+            option.setName('time')
+                .setDescription('Number of hours until ticket closes')
+                .setRequired(true))
+        .addChannelOption(option =>
+            option.setName('channel')
+                .setDescription('The channel to send the message to (optional)')
+                .setRequired(false)),
+    
+    new SlashCommandBuilder()
+        .setName('welcome')
+        .setDescription('Send welcome message and assign roles')
+        .addUserOption(option =>
+            option.setName('user')
+                .setDescription('The new member to welcome')
+                .setRequired(true))
+        .addChannelOption(option =>
+            option.setName('channel')
+                .setDescription('The channel to send the message to (optional)')
+                .setRequired(false))
+];
+
+// Handle slash commands
+client.on('interactionCreate', async interaction => {
+    if (!interaction.isChatInputCommand()) return;
+
+    const { commandName } = interaction;
+
+    try {
+        switch (commandName) {
+            case 'steamid':
+                await handleSteamIdCommand(interaction);
+                break;
+            case 'accepted':
+                await handleAcceptedCommand(interaction);
+                break;
+            case 'noresponse':
+                await handleNoResponseCommand(interaction);
+                break;
+            case 'welcome':
+                await handleWelcomeCommand(interaction);
+                break;
+        }
+    } catch (error) {
+        console.error('Error executing command:', error);
+        const errorMessage = 'There was an error executing this command!';
+        
+        if (interaction.replied || interaction.deferred) {
+            await interaction.followUp({ content: errorMessage, ephemeral: true });
+        } else {
+            await interaction.reply({ content: errorMessage, ephemeral: true });
+        }
+    }
+});
+
+// Command handlers
+async function handleSteamIdCommand(interaction) {
+    const targetUser = interaction.options.getUser('user');
+    const channel = interaction.options.getChannel('channel') || interaction.channel;
+    
+    if (!interaction.member.permissions.has(PermissionsBitField.Flags.ManageMessages)) {
+        return interaction.reply({ content: '❌ You need the "Manage Messages" permission to use this command.', ephemeral: true });
+    }
+    
+    const message = `Hey ${targetUser}, For Q1, that is not searchable as a Steam ID.
+
+Please follow the steps in the url in Q1.`;
+    
+    try {
+        const webhook = await channel.createWebhook({
+            name: interaction.user.displayName || interaction.user.username,
+            avatar: interaction.user.displayAvatarURL()
+        });
+        
+        await webhook.send({ content: message });
+        await webhook.delete();
+        await interaction.reply({ content: `✅ Steam ID correction sent to ${targetUser.username} in ${channel}!`, ephemeral: true });
+    } catch (error) {
+        console.error('Webhook error:', error);
+        await channel.send({ content: message });
+        await interaction.reply({ content: `✅ Steam ID correction sent to ${targetUser.username} in ${channel}! (via bot)`, ephemeral: true });
+    }
+}
+
+async function handleAcceptedCommand(interaction) {
+    const targetUser = interaction.options.getUser('user');
+    const channel = interaction.options.getChannel('channel') || interaction.channel;
+    
+    if (!interaction.member.permissions.has(PermissionsBitField.Flags.ManageMessages)) {
+        return interaction.reply({ content: '❌ You need the "Manage Messages" permission to use this command.', ephemeral: true });
+    }
+    
+    const message = `Hey ${targetUser} Thanks for applying, we have accepted your application.
+
+Please read through our induction document and let us know once you have completed it by pinging <@&952440799570825278>
+
+https://forms.gle/e5X1FNf2gxCrQweg7`;
+    
+    try {
+        const webhook = await channel.createWebhook({
+            name: interaction.user.displayName || interaction.user.username,
+            avatar: interaction.user.displayAvatarURL()
+        });
+        
+        await webhook.send({ content: message });
+        await webhook.delete();
+        await interaction.reply({ content: `✅ Acceptance message sent to ${targetUser.username} in ${channel}!`, ephemeral: true });
+    } catch (error) {
+        console.error('Webhook error:', error);
+        await channel.send({ content: message });
+        await interaction.reply({ content: `✅ Acceptance message sent to ${targetUser.username} in ${channel}! (via bot)`, ephemeral: true });
+    }
+}
+
+async function handleNoResponseCommand(interaction) {
+    const targetUser = interaction.options.getUser('user');
+    const time = interaction.options.getString('time');
+    const channel = interaction.options.getChannel('channel') || interaction.channel;
+    
+    if (!interaction.member.permissions.has(PermissionsBitField.Flags.ManageMessages)) {
+        return interaction.reply({ content: '❌ You need the "Manage Messages" permission to use this command.', ephemeral: true });
+    }
+    
+    const message = `Hey ${targetUser} 
+    
+Please fill out the above questionnaire so we can start the induction process.
+
+***This ticket will be closed in ${time} hours if there has been no response on this ticket. This will not impact your application process, but you will have to re-raise a new recruitment ticket.***
+
+Regards, 
+User Management Team`;
+    
+    try {
+        const webhook = await channel.createWebhook({
+            name: interaction.user.displayName || interaction.user.username,
+            avatar: interaction.user.displayAvatarURL()
+        });
+        
+        await webhook.send({ content: message });
+        await webhook.delete();
+        await interaction.reply({ content: `✅ No response warning sent to ${targetUser.username} with ${time} hour deadline in ${channel}!`, ephemeral: true });
+    } catch (error) {
+        console.error('Webhook error:', error);
+        await channel.send({ content: message });
+        await interaction.reply({ content: `✅ No response warning sent to ${targetUser.username} with ${time} hour deadline in ${channel}! (via bot)`, ephemeral: true });
+    }
+}
+
+async function handleWelcomeCommand(interaction) {
+    const targetUser = interaction.options.getUser('user');
+    const channel = interaction.options.getChannel('channel') || interaction.channel;
+    
+    if (!interaction.member.permissions.has(PermissionsBitField.Flags.ManageRoles)) {
+        return interaction.reply({ content: '❌ You need the "Manage Roles" permission to use this command.', ephemeral: true });
+    }
+    
+    const welcomeMessage = `Thanks ${targetUser}, welcome to Chimera! 🙂 I've assigned you the community role, giving you access to the community side of the Discord.
+
+If you're interested in getting whitelisted on our server (quicker access through queues), consider joining our seed team here: https://discord.com/channels/565502178253471744/927147021452857366 **(THIS IS THE BEST WAY TO GET VIP ON OUR SERVERS)**
+
+For priority access to servers you can also sign up to our patreon, but that's completely optional. Every cent donated through the Chimera community goes back into the community to recoup server hosting costs, hold competitions, issue member of the month rewards etc. and nothing is ever kept for profit.
+
+We're also proud to be the highest rated competitive team in OCE, and we regularly play in tournaments with the best international teams in the world. If you're interested in this style of play, consider putting in a comp application here: https://discord.com/channels/565502178253471744/1026447317903089756
+
+Most of us play HLL with locked squads, but if we see a name with CHMA in their tag request to join, we'll let them in. So feel free to get the tags on and smash some games with us! I'd also encourage you to jump into a voice channel, say g'day, and get involved with the community. We're all super friendly, let me know if you want to tee up a game 🙂
+
+There's a 4 week probation period and we may check-in to see how you're going. You can always reach out to myself or any other CHMA members for help if needed at all. Any questions at this point mate before we close the ticket?`;
+    
+    try {
+        const member = await interaction.guild.members.fetch(targetUser.id);
+        
+        // Role IDs - Replace these with your actual role IDs
+        const communityMemberRoleId = 'COMMUNITY_MEMBER_ROLE_ID';
+        const recruitRoleId = 'RECRUIT_ROLE_ID';
+        const rolesRoleId = 'ROLES_ROLE_ID';
+        const rankRoleId = 'RANK_ROLE_ID';
+        const guestRoleId = 'GUEST_ROLE_ID';
+        
+        // Add roles (comment out if you don't have the role IDs yet)
+        // await member.roles.add([communityMemberRoleId, recruitRoleId, rolesRoleId, rankRoleId]);
+        // await member.roles.remove(guestRoleId);
+        
+        const webhook = await channel.createWebhook({
+            name: interaction.user.displayName || interaction.user.username,
+            avatar: interaction.user.displayAvatarURL()
+        });
+        
+        await webhook.send({ content: welcomeMessage });
+        await webhook.delete();
+        await interaction.reply({ content: `✅ Welcome message sent to ${targetUser.username} in ${channel}!`, ephemeral: true });
+    } catch (error) {
+        console.error('Webhook/Role error:', error);
+        await channel.send({ content: welcomeMessage });
+        await interaction.reply({ content: `✅ Welcome message sent to ${targetUser.username} in ${channel}! (Note: Role assignment may have failed)`, ephemeral: true });
+    }
+}
+
+// Register commands when bot starts
+client.on('ready', async () => {
+    try {
+        console.log('🔄 Refreshing application (/) commands...');
+        await client.application.commands.set(commands);
+        console.log('✅ Successfully reloaded application (/) commands.');
+    } catch (error) {
+        console.error('❌ Error registering commands:', error);
+    }
+});
+
+// Error handling
+process.on('unhandledRejection', error => {
+    console.error('Unhandled promise rejection:', error);
+});
+
+// Login to Discord
+client.login(process.env.DISCORD_TOKEN);
