@@ -140,7 +140,9 @@ async function handleAcceptedCommand(interaction) {
         return interaction.reply({ content: '❌ You need the "Manage Messages" permission to use this command.', ephemeral: true });
     }
     
-    const message = `Hey ${targetUser} Thanks for applying, we have accepted your application.
+    const message = `Hey ${targetUser},
+    
+Thanks for applying, we have accepted your application.
 
 Please read through our induction document and let us know once you have completed it by pinging <@&952440799570825278>
 
@@ -171,7 +173,7 @@ async function handleNoResponseCommand(interaction) {
         return interaction.reply({ content: '❌ You need the "Manage Messages" permission to use this command.', ephemeral: true });
     }
     
-    const message = `Hey ${targetUser} 
+    const message = `Hey ${targetUser},
     
 Please fill out the above questionnaire so we can start the induction process.
 
@@ -204,7 +206,9 @@ async function handleWelcomeCommand(interaction) {
         return interaction.reply({ content: '❌ You need the "Manage Roles" permission to use this command.', ephemeral: true });
     }
     
-    const welcomeMessage = `Thanks ${targetUser}, welcome to Chimera! 🙂 I've assigned you the community role, giving you access to the community side of the Discord.
+    const welcomeMessage = `Thanks ${targetUser}, 
+    
+Welcome to Chimera! 🙂 I've assigned you the community role, giving you access to the community side of the Discord.
 
 If you're interested in getting whitelisted on our server (quicker access through queues), consider joining our seed team here: https://discord.com/channels/565502178253471744/927147021452857366 **(THIS IS THE BEST WAY TO GET VIP ON OUR SERVERS)**
 
@@ -220,15 +224,15 @@ There's a 4 week probation period and we may check-in to see how you're going. Y
         const member = await interaction.guild.members.fetch(targetUser.id);
         
         // Role IDs - Replace these with your actual role IDs
-        const communityMemberRoleId = 'COMMUNITY_MEMBER_ROLE_ID';
-        const recruitRoleId = 'RECRUIT_ROLE_ID';
-        const rolesRoleId = 'ROLES_ROLE_ID';
-        const rankRoleId = 'RANK_ROLE_ID';
-        const guestRoleId = 'GUEST_ROLE_ID';
+        const communityMemberRoleId = '633051065960628244';
+        const recruitRoleId = '635774784084377601';
+        const rolesRoleId = '793819588378755082';
+        const rankRoleId = '656441481619570718';
+        const guestRoleId = '794754820950720553';
         
         // Add roles (comment out if you don't have the role IDs yet)
-        // await member.roles.add([communityMemberRoleId, recruitRoleId, rolesRoleId, rankRoleId]);
-        // await member.roles.remove(guestRoleId);
+        await member.roles.add([communityMemberRoleId, recruitRoleId, rolesRoleId, rankRoleId]);
+        await member.roles.remove(guestRoleId);
         
         const webhook = await channel.createWebhook({
             name: interaction.user.displayName || interaction.user.username,
