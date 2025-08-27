@@ -106,10 +106,14 @@ client.on('interactionCreate', async interaction => {
         console.error('Error executing command:', error);
         const errorMessage = 'There was an error executing this command!';
         
-        if (interaction.replied || interaction.deferred) {
-            await interaction.followUp({ content: errorMessage, ephemeral: true });
-        } else {
-            await interaction.reply({ content: errorMessage, ephemeral: true });
+        try {
+            if (interaction.deferred) {
+                await interaction.editReply({ content: errorMessage });
+            } else if (!interaction.replied) {
+                await interaction.reply({ content: errorMessage, ephemeral: true });
+            }
+        } catch (replyError) {
+            console.error('Error sending error message:', replyError);
         }
     }
 });
@@ -134,7 +138,7 @@ Please follow the steps in the url in Q1.`;
     try {
         const webhook = await channel.createWebhook({
             name: interaction.member.nickname || interaction.user.displayName || interaction.user.username,
-            avatar: interaction.user.displayAvatarURL()
+            avatar: interaction.user.displayAvatarURL({ dynamic: true, size: 256 })
         });
         
         await webhook.send({ content: message });
@@ -170,7 +174,7 @@ https://forms.gle/e5X1FNf2gxCrQweg7`;
     try {
         const webhook = await channel.createWebhook({
             name: interaction.member.nickname || interaction.user.displayName || interaction.user.username,
-            avatar: interaction.user.displayAvatarURL()
+            avatar: interaction.user.displayAvatarURL({ dynamic: true, size: 256 })
         });
         
         await webhook.send({ content: message });
@@ -208,7 +212,7 @@ User Management Team`;
     try {
         const webhook = await channel.createWebhook({
             name: interaction.member.nickname || interaction.user.displayName || interaction.user.username,
-            avatar: interaction.user.displayAvatarURL()
+            avatar: interaction.user.displayAvatarURL({ dynamic: true, size: 256 })
         });
         
         await webhook.send({ content: message });
@@ -229,6 +233,9 @@ async function handleWelcomeCommand(interaction) {
             ephemeral: true 
         });
     }
+    
+    // Defer the reply immediately to prevent timeout
+    await interaction.deferReply({ ephemeral: true });
     
     const targetUser = interaction.options.getUser('user');
     const channel = interaction.options.getChannel('channel') || interaction.channel;
@@ -257,22 +264,62 @@ There's a 4 week probation period and we may check-in to see how you're going. Y
         const rankRoleId = '656441481619570718';
         const guestRoleId = '794754820950720553';
         
-        // Add roles (comment out if you don't have the role IDs yet)
-        await member.roles.add([communityMemberRoleId, recruitRoleId, rolesRoleId, rankRoleId]);
-        await member.roles.remove(guestRoleId);
+        console.log(`Before role changes for ${targetUser.username}:`);
+        console.log(`Current roles: ${member.roles.cache.map(r => r.name).join(', ')}`);
         
-        const webhook = await channel.createWebhook({
-            name: interaction.member.nickname || interaction.user.displayName || interaction.user.username,
-            avatar: interaction.user.displayAvatarURL()
-        });
+        let roleChangeSuccess = true;
         
-        await webhook.send({ content: welcomeMessage });
-        await webhook.delete();
-        await interaction.reply({ content: `✅ Welcome message sent to ${targetUser.username} in ${channel}!`, ephemeral: true });
+        // Add roles one by one with error handling
+        try {
+            await member.roles.add([communityMemberRoleId, recruitRoleId, rolesRoleId, rankRoleId]);
+            console.log('✅ Successfully added roles');
+        } catch (roleError) {
+            console.error('❌ Error adding roles:', roleError);
+            roleChangeSuccess = false;
+        }
+        
+        // Remove guest role
+        try {
+            await member.roles.remove(guestRoleId);
+            console.log('✅ Successfully removed guest role');
+        } catch (roleError) {
+            console.error('❌ Error removing guest role:', roleError);
+            roleChangeSuccess = false;
+        }
+        
+        console.log(`After role changes for ${targetUser.username}:`);
+        console.log(`New roles: ${member.roles.cache.map(r => r.name).join(', ')}`);
+        
+        // Send the welcome message
+        try {
+            const webhook = await channel.createWebhook({
+                name: interaction.member.nickname || interaction.user.displayName || interaction.user.username,
+                avatar: interaction.user.displayAvatarURL({ dynamic: true, size: 256 })
+            });
+            
+            await webhook.send({ content: welcomeMessage });
+            await webhook.delete();
+            
+            const successMessage = roleChangeSuccess 
+                ? `✅ Welcome message sent to ${targetUser.username} in ${channel}!`
+                : `✅ Welcome message sent to ${targetUser.username} in ${channel}! (Note: Some role assignments may have failed)`;
+            
+            await interaction.editReply({ content: successMessage });
+        } catch (webhookError) {
+            console.error('Webhook error:', webhookError);
+            await channel.send({ content: welcomeMessage });
+            
+            const successMessage = roleChangeSuccess 
+                ? `✅ Welcome message sent to ${targetUser.username} in ${channel}! (via bot)`
+                : `✅ Welcome message sent to ${targetUser.username} in ${channel}! (via bot - Note: Some role assignments may have failed)`;
+            
+            await interaction.editReply({ content: successMessage });
+        }
     } catch (error) {
-        console.error('Webhook/Role error:', error);
-        await channel.send({ content: welcomeMessage });
-        await interaction.reply({ content: `✅ Welcome message sent to ${targetUser.username} in ${channel}! (Note: Role assignment may have failed)`, ephemeral: true });
+        console.error('Welcome command error:', error);
+        await interaction.editReply({ 
+            content: `❌ There was an error processing the welcome command for ${targetUser.username}. Please check the logs.` 
+        });
     }
 }
 
